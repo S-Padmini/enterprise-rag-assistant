@@ -8,47 +8,60 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+
 @Service
 public class GitHubAIService {
 
+
     @Value("${github.token}")
     private String githubToken;
+
 
     @Value("${github.model}")
     private String model;
 
 
-    public String generateResponse(String context, String question, String history) {
+    private final PromptTemplateService promptTemplateService;
+
+
+    public GitHubAIService(
+            PromptTemplateService promptTemplateService) {
+
+        this.promptTemplateService = promptTemplateService;
+    }
+
+
+
+    public String generateResponse(
+            String context,
+            String question,
+            String history) {
+
 
         try {
 
+
+            // Step 1: Create RAG prompt
             String prompt =
-                    "You are an Enterprise RAG Assistant.\n\n" +
-
-                    "Use previous conversation history if available.\n\n" +
-
-                    "Conversation History:\n" +
-                    history +
-
-                    "\n\nAnswer ONLY using the following document context.\n\n" +
-
-                    "Document Context:\n" +
-                    context +
-
-                    "\n\nIf answer is not available:\n" +
-                    "I couldn't find that information.\n\n" +
-
-                    "Question:\n" +
-                    question;
+                    promptTemplateService.buildPrompt(
+                            context,
+                            question,
+                            history
+                    );
 
 
-            // Escape JSON special characters
+
+            // Step 2: Escape JSON characters
+
             String escapedPrompt = prompt
                     .replace("\\", "\\\\")
                     .replace("\"", "\\\"")
                     .replace("\n", "\\n")
                     .replace("\r", "");
 
+
+
+            // Step 3: Create API request body
 
             String jsonRequest = """
                     {
@@ -58,32 +71,63 @@ public class GitHubAIService {
                           "role": "user",
                           "content": "%s"
                         }
-                      ]
+                      ],
+                      "temperature": 0.2
                     }
-                    """.formatted(model, escapedPrompt);
+                    """.formatted(
+                            model,
+                            escapedPrompt
+                    );
 
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://models.inference.ai.azure.com/chat/completions"))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + githubToken)
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonRequest))
-                    .build();
+
+            // Step 4: Call GitHub AI Model API
+
+            HttpRequest request =
+                    HttpRequest.newBuilder()
+                            .uri(
+                                    URI.create(
+                                            "https://models.inference.ai.azure.com/chat/completions"
+                                    )
+                            )
+                            .header(
+                                    "Content-Type",
+                                    "application/json"
+                            )
+                            .header(
+                                    "Authorization",
+                                    "Bearer " + githubToken
+                            )
+                            .POST(
+                                    HttpRequest.BodyPublishers.ofString(
+                                            jsonRequest
+                                    )
+                            )
+                            .build();
 
 
-            HttpClient client = HttpClient.newHttpClient();
+
+            HttpClient client =
+                    HttpClient.newHttpClient();
 
 
-            HttpResponse<String> response = client.send(
-                    request,
-                    HttpResponse.BodyHandlers.ofString()
-            );
 
+            HttpResponse<String> response =
+                    client.send(
+                            request,
+                            HttpResponse.BodyHandlers.ofString()
+                    );
+
+
+
+            // Step 5: Return AI response
 
             return response.body();
 
 
+
         } catch (Exception e) {
+
 
             return "AI Connection Error : " + e.getMessage();
 

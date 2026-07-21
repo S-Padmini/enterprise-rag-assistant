@@ -1,2 +1,18 @@
 Enterprise RAG Assistant is an AI powered document question answering system.
-It uses LangChain4j, Gemini API and semantic search.
+
+Architecture:
+The system follows Retrieval Augmented Generation architecture.
+
+It contains:
+1. Document ingestion module
+2. Text chunking module
+3. Vector database for storing embeddings
+4. Retriever for semantic search
+5. Large Language Model for generating answers.
+
+The workflow:
+Documents are uploaded.
+Documents are converted into chunks.
+Embeddings are created.
+Relevant chunks are retrieved.
+LLM generates final response.

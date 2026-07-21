@@ -5,15 +5,32 @@ import org.springframework.stereotype.Service;
 @Service
 public class PromptTemplateService {
 
-    public String buildPrompt(String context, String question) {
+
+    public String buildPrompt(
+            String context,
+            String question,
+            String history) {
+
 
         return """
                 You are an Enterprise RAG Assistant.
 
-                Answer ONLY using the document context below.
+                Your task is to answer user questions using the provided document context.
 
-                If the answer is not found, clearly say:
-                "I couldn't find that information in the uploaded document."
+                Follow these rules strictly:
+
+                1. Use only the information available in the DOCUMENT CONTEXT.
+                2. Use previous conversation history only when it helps understand the question.
+                3. Do not create or assume information that is not present.
+                4. If the answer is not available in the document context, respond:
+                   "I couldn't find that information in the uploaded document."
+
+                -----------------------------
+                CONVERSATION HISTORY
+                -----------------------------
+
+                %s
+
 
                 -----------------------------
                 DOCUMENT CONTEXT
@@ -21,15 +38,22 @@ public class PromptTemplateService {
 
                 %s
 
+
                 -----------------------------
                 USER QUESTION
                 -----------------------------
 
                 %s
 
+
                 -----------------------------
-                ANSWER
+                FINAL ANSWER
                 -----------------------------
-                """.formatted(context, question);
+
+                """.formatted(
+                        history,
+                        context,
+                        question
+                );
     }
 }
